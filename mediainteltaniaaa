@@ -1,0 +1,450 @@
+import React, { useState, useEffect } from 'react';
+import Plot from 'react-plotly.js';
+
+// This section is for loading html2canvas and jspdf from CDNs.
+// In a real HTML file, you would include these script tags directly in the <head> or before your React app script.
+// For the Canvas environment, we'll ensure they are available by implicitly assuming their presence
+// or by demonstrating how they would be linked in a standard HTML setup.
+// For this environment, we mock their global availability for React to use them.
+// In a standard React setup, you'd install them via npm and import them.
+// For demonstration purposes within this specific environment:
+// We declare global variables to satisfy TypeScript/ESLint for the demo,
+// assuming the libraries are loaded via external <script> tags when this immersive is rendered in a browser.
+declare global {
+  interface Window {
+    html2canvas: any;
+    jspdf: any;
+  }
+}
+const html2canvas = typeof window !== 'undefined' ? window.html2canvas : null;
+const jsPDF = typeof window !== 'undefined' ? window.jspdf : null;
+
+
+// Global variables from the environment (e.g., __app_id is provided by Canvas)
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+/**
+ * Simulates backend processing to generate mock chart data and insights.
+ * In a real application, this would be an API call to a backend server
+ * that processes the CSV with Pandas and generates Plotly JSONs,
+ * and uses a robust LLM API for insights.
+ */
+const generateMockDashboardData = async () => {
+  // Simulate a delay for "backend processing"
+  await new Promise(resolve => setTimeout(resolve, 1500));
+
+  // --- Mock Data for Plotly Charts ---
+  // These are example Plotly.js chart configurations.
+  // In a real scenario, these would be dynamically generated based on the uploaded CSV data.
+
+  const sentimentPieChartData = {
+    data: [{
+      labels: ['Positive', 'Negative', 'Neutral'],
+      values: [45, 25, 30],
+      type: 'pie',
+      hole: .4,
+      marker: {
+        colors: ['#F472B6', '#EF4444', '#FCD34D'] // Pink, Red, Yellow
+      }
+    }],
+    layout: {
+      title: 'Sentiment Breakdown',
+      height: 350,
+      margin: { t: 50, b: 50, l: 50, r: 50 },
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { family: 'Inter', color: '#374151' },
+      showlegend: true,
+      legend: { orientation: 'h', yanchor: 'bottom', y: -0.2 }
+    }
+  };
+
+  const engagementTrendChartData = {
+    data: [{
+      x: ['2023-01-01', '2023-01-08', '2023-01-15', '2023-01-22', '2023-01-29'],
+      y: [120, 150, 130, 180, 200],
+      mode: 'lines+markers',
+      name: 'Engagements',
+      line: { color: '#EC4899', width: 3 }, // Darker pink
+      marker: { symbol: 'circle', size: 8 }
+    }],
+    layout: {
+      title: 'Engagement Trend Over Time',
+      height: 350,
+      margin: { t: 50, b: 50, l: 50, r: 50 },
+      xaxis: { title: 'Date', showgrid: false },
+      yaxis: { title: 'Engagements' },
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { family: 'Inter', color: '#374151' }
+    }
+  };
+
+  const platformEngagementsChartData = {
+    data: [{
+      x: ['Twitter', 'Facebook', 'Instagram', 'LinkedIn', 'TikTok'],
+      y: [300, 250, 180, 100, 220],
+      type: 'bar',
+      marker: { color: ['#DB2777', '#F0ABFC', '#FB7185', '#F87171', '#C084FC'] } // Pink color scheme
+    }],
+    layout: {
+      title: 'Platform Engagements',
+      height: 350,
+      margin: { t: 50, b: 50, l: 50, r: 50 },
+      xaxis: { title: 'Platform' },
+      yaxis: { title: 'Total Engagements' },
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { family: 'Inter', color: '#374151' }
+    }
+  };
+
+  const mediaTypeMixChartData = {
+    data: [{
+      labels: ['Text', 'Image', 'Video', 'Link'],
+      values: [50, 30, 15, 5],
+      type: 'pie',
+      hole: .4,
+      marker: {
+        colors: ['#F9A8D4', '#FBCFE8', '#FCE7F6', '#FDA4AF'] // Lighter pink shades
+      }
+    }],
+    layout: {
+      title: 'Media Type Mix',
+      height: 350,
+      margin: { t: 50, b: 50, l: 50, r: 50 },
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { family: 'Inter', color: '#374151' },
+      showlegend: true,
+      legend: { orientation: 'h', yanchor: 'bottom', y: -0.2 }
+    }
+  };
+
+  const topLocationsChartData = {
+    data: [{
+      x: ['New York', 'London', 'Paris', 'Tokyo', 'Sydney'],
+      y: [90, 70, 60, 50, 40],
+      type: 'bar',
+      marker: { color: '#FBCFE8' } // Pink color
+    }],
+    layout: {
+      title: 'Top 5 Locations by Engagements',
+      height: 350,
+      margin: { t: 50, b: 50, l: 50, r: 50 },
+      xaxis: { title: 'Location' },
+      yaxis: { title: 'Total Engagements' },
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { family: 'Inter', color: '#374151' }
+    }
+  };
+
+  // --- Insight Generation using Gemini API (Client-side for demo) ---
+  const generateInsights = async (chartTitle, descriptionOfData) => {
+    let chatHistory = [];
+    const prompt = `Based on the following data for "${chartTitle}", provide the top 3 concise insights. Be specific and actionable:\n\n${descriptionOfData}`;
+    chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+    const payload = {
+      contents: chatHistory,
+      generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+              type: "ARRAY",
+              items: { "type": "STRING" }
+          }
+    }
+    };
+    const apiKey = ""; // Canvas will automatically provide this
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json();
+
+      if (result.candidates && result.candidates.length > 0 &&
+          result.candidates[0].content && result.candidates[0].content.parts &&
+          result.candidates[0].content.parts.length > 0) {
+        const jsonString = result.candidates[0].content.parts[0].text;
+        return JSON.parse(jsonString);
+      } else {
+        console.error("Gemini API response structure unexpected:", result);
+        return ["Could not generate insights."];
+      }
+    } catch (error) {
+      console.error("Error generating insights:", error);
+      return ["Error generating insights."];
+    }
+  };
+
+  // Generate insights for each mock chart
+  const sentimentInsights = await generateInsights(
+    "Sentiment Breakdown",
+    "Positive: 45%, Negative: 25%, Neutral: 30%. This shows the overall sentiment of media mentions."
+  );
+  const engagementInsights = await generateInsights(
+    "Engagement Trend Over Time",
+    "Engagements increased from 120 to 200 over the month of January 2023, with a slight dip in the middle of the month."
+  );
+  const platformInsights = await generateInsights(
+    "Platform Engagements",
+    "Twitter has the highest engagements (300), followed by Facebook (250) and TikTok (220). Instagram and LinkedIn have lower engagements."
+  );
+  const mediaTypeInsights = await generateInsights(
+    "Media Type Mix",
+    "Text (50%) is the dominant media type, followed by Image (30%), Video (15%), and Link (5%)."
+  );
+  const locationInsights = await generateInsights(
+    "Top 5 Locations by Engagements",
+    "New York has the highest engagements (90), followed by London (70) and Paris (60). Tokyo and Sydney have fewer engagements."
+  );
+
+
+  // Return structured dashboard data
+  return {
+    sentimentBreakdown: {
+      title: 'Sentiment Breakdown',
+      chartData: sentimentPieChartData,
+      insights: sentimentInsights
+    },
+    engagementTrend: {
+      title: 'Engagement Trend over Time',
+      chartData: engagementTrendChartData,
+      insights: engagementInsights
+    },
+    platformEngagements: {
+      title: 'Platform Engagements',
+      chartData: platformEngagementsChartData,
+      insights: platformInsights
+    },
+    mediaTypeMix: {
+      title: 'Media Type Mix',
+      chartData: mediaTypeMixChartData,
+      insights: mediaTypeInsights
+    },
+    topLocations: {
+      title: 'Top 5 Locations by Engagements',
+      chartData: topLocationsChartData,
+      insights: locationInsights
+    }
+  };
+};
+
+/**
+ * Main App component for the Interactive Media Intelligence Dashboard.
+ */
+function App() {
+  const [csvFile, setCsvFile] = useState(null);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [isAuthReady, setIsAuthReady] = useState(false); // State to track auth readiness (for Firebase if implemented)
+
+  // Simulate Firebase auth readiness for this demo
+  useEffect(() => {
+    setIsAuthReady(true);
+  }, []);
+
+  /**
+   * Handles file selection from the input.
+   * Validates if the selected file is a CSV.
+   * @param {Event} event - The change event from the file input.
+   */
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file && file.type === 'text/csv') {
+      setCsvFile(file);
+      setError('');
+    } else {
+      setCsvFile(null);
+      setError('Please upload a valid CSV file.');
+    }
+  };
+
+  /**
+   * Processes the uploaded CSV file (simulated) and generates dashboard data.
+   * In a real application, this would send the CSV to a backend for processing.
+   */
+  const handleProcessCsv = async () => {
+    if (!csvFile) {
+      setError('No CSV file selected.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setDashboardData(null); // Clear previous data
+
+    try {
+      // Simulate API call to backend for data processing and chart generation.
+      // Example of how you might send a file to a backend:
+      // const formData = new FormData();
+      // formData.append('csvFile', csvFile);
+      // const response = await fetch('/api/process-csv', { method: 'POST', body: formData });
+      // const data = await response.json();
+      // setDashboardData(data);
+
+      const data = await generateMockDashboardData(); // Using mock data for demo purposes
+      setDashboardData(data);
+
+    } catch (err) {
+      console.error("Error processing CSV:", err);
+      setError('Failed to process CSV. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Handles the download of the entire dashboard content as a PDF.
+   * Uses html2canvas to capture the DOM and jsPDF to convert it to a PDF.
+   */
+  const handleDownloadPdf = async () => {
+    // Check if html2canvas and jsPDF are loaded (they should be via CDN in the HTML wrapper)
+    if (!html2canvas || !jsPDF) {
+      console.error('html2canvas or jspdf libraries are not loaded. Please ensure they are linked via CDN in the HTML.');
+      // You might want to display a user-friendly message here
+      return;
+    }
+
+    const input = document.getElementById('dashboard-content'); // Get the main content element
+    if (input) {
+      setLoading(true); // Show loading indicator while generating PDF
+      try {
+        const canvas = await html2canvas(input, {
+          scale: 2, // Increase scale for better quality PDF
+          useCORS: true // Important for images/charts from different origins
+        });
+        const imgData = canvas.toDataURL('image/png'); // Get image data as PNG
+        const pdf = new jsPDF('p', 'mm', 'a4'); // 'p' for portrait, 'mm' for millimeters, 'a4' size
+        const imgWidth = 210; // A4 width in mm
+        const pageHeight = 297; // A4 height in mm
+        const imgHeight = canvas.height * imgWidth / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        // Add the first page of the image
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+
+        // Add subsequent pages if content overflows A4 height
+        while (heightLeft >= 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+
+        pdf.save("media_intelligence_dashboard_by_tania.pdf"); // Save the PDF
+      } catch (error) {
+        console.error("Error generating PDF:", error);
+      } finally {
+        setLoading(false); // Hide loading indicator
+      }
+    } else {
+      console.error("Element with id 'dashboard-content' not found for PDF generation.");
+    }
+  };
+
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-red-50 p-4 sm:p-6 lg:p-8 font-inter text-gray-800">
+      <header className="mb-8 text-center">
+        <h1 className="text-4xl sm:text-5xl font-extrabold text-rose-700 leading-tight">
+          Interactive Media Intelligence Dashboard <br /> <span className="text-3xl sm:text-4xl">by Tania Putri Rachmadani</span>
+        </h1>
+        <p className="text-md sm:text-lg text-rose-600 mt-2">
+          Upload your CSV to visualize and gain insights into your media data.
+        </p>
+      </header>
+
+      <main id="dashboard-content" className="max-w-6xl mx-auto bg-white rounded-xl shadow-lg p-6 sm:p-8 lg:p-10">
+        {!dashboardData && (
+          <section className="mb-8 p-6 border-2 border-dashed border-rose-300 rounded-lg text-center bg-rose-50">
+            <h2 className="text-2xl font-semibold text-rose-700 mb-4">1. Upload Your CSV File</h2>
+            <div className="flex flex-col items-center justify-center space-y-4">
+              <label htmlFor="csv-upload" className="cursor-pointer bg-rose-600 text-white px-6 py-3 rounded-lg shadow-md hover:bg-rose-700 transition duration-300 ease-in-out text-lg font-medium">
+                Choose CSV File
+                <input
+                  id="csv-upload"
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
+              {csvFile && (
+                <p className="text-rose-800 text-lg">Selected file: <span className="font-semibold">{csvFile.name}</span></p>
+              )}
+              {error && <p className="text-red-600 font-medium text-lg">{error}</p>}
+              <button
+                onClick={handleProcessCsv}
+                disabled={!csvFile || loading}
+                className="bg-green-600 text-white px-8 py-3 rounded-lg shadow-md hover:bg-green-700 transition duration-300 ease-in-out text-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Processing Data...' : 'Process Data'}
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mt-4">
+              Required columns: <span className="font-semibold">Date, Platform, Sentiment, Location, Engagements, Media Type</span>
+            </p>
+          </section>
+        )}
+
+        {loading && (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-rose-500"></div>
+            <p className="ml-4 text-xl font-medium text-rose-700">Loading charts and insights...</p>
+          </div>
+        )}
+
+        {dashboardData && (
+          <section className="space-y-12">
+            <h2 className="text-3xl font-bold text-rose-700 mb-6 text-center">Interactive Dashboard</h2>
+
+            {Object.values(dashboardData).map((chartInfo, index) => (
+              <div key={index} className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200">
+                <h3 className="text-2xl font-semibold text-rose-600 mb-4">{index + 1}. {chartInfo.title}</h3>
+                <div className="flex justify-center items-center min-h-[350px]">
+                  <Plot
+                    data={chartInfo.chartData.data}
+                    layout={chartInfo.chartData.layout}
+                    config={{ responsive: true, displayModeBar: false }}
+                    className="w-full h-full"
+                  />
+                </div>
+                <div className="mt-6">
+                  <h4 className="text-xl font-semibold text-gray-700 mb-2">Top 3 Insights:</h4>
+                  <ul className="list-disc list-inside text-gray-700 space-y-2 pl-4">
+                    {chartInfo.insights.map((insight, i) => (
+                      <li key={i}>{insight}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ))}
+            <div className="flex justify-center mt-8">
+              <button
+                onClick={handleDownloadPdf}
+                disabled={loading}
+                className="bg-purple-600 text-white px-8 py-3 rounded-lg shadow-md hover:bg-purple-700 transition duration-300 ease-in-out text-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Preparing PDF...' : 'Download Dashboard as PDF'}
+              </button>
+            </div>
+          </section>
+        )}
+      </main>
+
+      <footer className="mt-12 text-center text-gray-600">
+        <p>&copy; {new Date().getFullYear()} Media Intelligence Dashboard. All rights reserved.</p>
+      </footer>
+    </div>
+  );
+}
+
+export default App;
